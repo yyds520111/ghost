@@ -1,0 +1,28 @@
+name: build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: compile
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          xcrun --sdk iphoneos clang \
+            -dynamiclib \
+            -arch arm64 -arch arm64e \
+            -miphoneos-version-min=15.0 \
+            -isysroot "$SDK" \
+            -framework UIKit -framework Foundation \
+            -framework QuartzCore -framework CoreGraphics \
+            -install_name @executable_path/Frameworks/GhostAuto.dylib \
+            -fobjc-arc -O2 -w \
+            -o GhostAuto.dylib main.m
+          brew install ldid
+          ldid -S GhostAuto.dylib
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GhostAuto
+          path: GhostAuto.dylib
